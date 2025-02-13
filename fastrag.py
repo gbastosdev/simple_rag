@@ -1,7 +1,8 @@
+import json
 from fastapi import FastAPI, HTTPException
 from sentence_transformers import SentenceTransformer, util
 from query_request import QueryRequest
-import requests, os
+import requests, os, uvicorn
 
 app = FastAPI()
 
@@ -27,6 +28,9 @@ embedded_docs = {
 
 @app.post("/query")
 def query(req: QueryRequest):
+    if not req.query:
+        raise HTTPException(status_code=400, detail="Request without entries!")
+
     embedded_query = model.encode(req.query,convert_to_tensor=True)
     best_document = {}
     best_score = float("-inf")
@@ -37,22 +41,25 @@ def query(req: QueryRequest):
             best_score = score
             best_document = doc
 
-    prompt = f"You are an AI assistante. Base your answer on this document {best_document['text']}\n\nUser: {req.query}\n Assistant:"
+    prompt = f"You are an AI assistant. Your answer will be exact like this document {best_document['text']}. User: {req.query}. Assistant:"
 
     try:
-        api_key = os.getenv("OA_KEY")
-        url = 'https://api.openapi.com/v1/chat/completions'
-        headers = {
-            "Authorization": f"Bearer {api_key}",
-            "Content-Type": "application/json",
-        }
+        url = 'http://localhost:11432/api/chat'
         data = {
-            "model": "Qwen/QwQ-32B-Preview",
-            "messages": [{"role": "system", "content": prompt}]
-        }
-        response = requests.post(url, headers=headers, json=data)
+                "model": "tinyllama",
+                "messages": [{
+                    "role": "user",
+                    "content": prompt
+                }],
+                "stream": False
+            }
+        data_to_send = json.dumps(data).encode('utf-8')
+        response = requests.post(url, data=data_to_send)
         res = response.json()
-        return {"response": res.get("choices")[0].get("message").get("content")}
+        return {"response": res.get("message").get("content")}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+    
+if __name__ == "__main__":
+    uvicorn.run("fastrag:app", host="0.0.0.0", port=8000, reload=True)
