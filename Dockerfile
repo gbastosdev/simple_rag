@@ -1,14 +1,14 @@
-# Use the official Ollama image as the base image
+# Use the official Ollama image
 FROM ollama/ollama:latest
 
-# Create a volume for /root/.ollama
-VOLUME /root/.ollama
+COPY ./shell-ollama.sh /tmp/shell-ollama.sh
 
-# Expose the Ollama API port (default is 11434)
+WORKDIR /tmp
+
+RUN chmod +x shell-ollama.sh \
+    && ./shell-ollama.sh
+
+# Expose the Ollama API port
 EXPOSE 11434
 
-# Pull the tinyllama model
-RUN ollama pull tinyllama
 
-# Command to run Ollama
-CMD ["ollama", "serve"]

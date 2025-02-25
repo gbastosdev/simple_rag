@@ -44,7 +44,7 @@ def query(req: QueryRequest):
     prompt = f"You are an AI assistant. Your answer will be exact like this document {best_document['text']}. User: {req.query}. Assistant:"
 
     try:
-        url = 'http://localhost:11432/api/chat'
+        url = 'http://localhost:11434/api/chat'
         data = {
                 "model": "tinyllama",
                 "messages": [{
@@ -56,7 +56,7 @@ def query(req: QueryRequest):
         data_to_send = json.dumps(data).encode('utf-8')
         response = requests.post(url, data=data_to_send)
         res = response.json()
-        return {"response": res.get("message").get("content")}
+        return {"response": res['message']['content']}
     
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

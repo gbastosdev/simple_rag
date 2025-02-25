@@ -1,0 +1,9 @@
+version: "3.8"
+
+services:
+  ollama:
+    build: .
+    container_name: ollama-tinyllama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
